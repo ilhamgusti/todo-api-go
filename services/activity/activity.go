@@ -57,11 +57,6 @@ func Store(c *fiber.Ctx) error {
 
 	activity := new(models.Activity)
 
-	// errorValidate := validators.ValidateActivityStruct(*activity)
-	// fmt.Println(errorValidate)
-	// if errorValidate != nil {
-	// 	return c.Status(400).JSON(errorValidate)
-	// }
 	if err := c.BodyParser(&activity); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"status": "Bad Request",
@@ -145,12 +140,6 @@ func Update(c *fiber.Ctx) error {
 			"message": fmt.Sprintf(`Activity with ID %d Bad Request`, id),
 		})
 	}
-
-	// errorValidate := validators.ValidateActivityStruct(*activity)
-	// fmt.Println(errorValidate)
-	// if errorValidate != nil {
-	// 	return c.Status(400).JSON(errorValidate)
-	// }
 
 	database.DB.Save(&activity)
 	return c.JSON(fiber.Map{
