@@ -123,9 +123,9 @@ func Update(c *fiber.Ctx) error {
 
 	activity := new(models.Activity)
 
-	errdb := database.DB.First(&activity, id).Error
+	err = database.DB.First(&activity, id).Error
 
-	if errors.Is(errdb, gorm.ErrRecordNotFound) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
 			"message": fmt.Sprintf(`Activity with ID %d Not Found`, id),

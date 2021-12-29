@@ -152,9 +152,9 @@ func Update(c *fiber.Ctx) error {
 	}
 	todo := new(models.Todo)
 
-	errdb := database.DB.First(&todo, id).Error
+	err = database.DB.First(&todo, id).Error
 
-	if errors.Is(errdb, gorm.ErrRecordNotFound) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
 			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
