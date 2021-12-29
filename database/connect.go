@@ -9,6 +9,7 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // Declare the variable for the database
@@ -50,7 +51,9 @@ func ConnectDB() {
 	sqlDB.Close()
 
 	fmt.Println("RECREATE NEW ONE...")
-	DB, err = gorm.Open(mysql.Open(dsnwithDB))
+	DB, err = gorm.Open(mysql.Open(dsnwithDB), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 
 	if err != nil {
 		panic("failed to connect database")

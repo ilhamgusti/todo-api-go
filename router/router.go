@@ -11,7 +11,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/etag"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 func cacheMiddleware(c *fiber.Ctx) error {
@@ -51,7 +50,7 @@ func middleware(app *fiber.App) {
 func Init(app *fiber.App) {
 	// middleware(app)
 
-	endpoint := app.Group("/", logger.New())
+	endpoint := app.Group("/")
 	endpoint.Get("/todo-items", cacheMiddleware, todo.GetAll)
 	endpoint.Get("/todo-items/:id", cacheMiddleware, todo.GetById)
 	endpoint.Post("/todo-items", todo.Store)
