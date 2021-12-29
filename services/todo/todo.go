@@ -3,8 +3,10 @@ package todo
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"todo-apis-go/database"
 	"todo-apis-go/models"
+	"todo-apis-go/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -19,6 +21,7 @@ func GetAll(c *fiber.Ctx) error {
 
 	if activityId == "" {
 		db.Table("todos").Find(&todos)
+		utils.Cache.Set("all", todos)
 		return c.JSON(fiber.Map{
 			"status":  "Success",
 			"message": "Success",
@@ -26,9 +29,14 @@ func GetAll(c *fiber.Ctx) error {
 		})
 	}
 	db.Raw("SELECT * FROM todos WHERE activity_group_id = ?", activityId).Scan(&todos)
-	if todos == nil {
+
+	utils.Cache.Set(fmt.Sprintf("agi_%s", activityId), todos)
+
+	if todos != nil {
 		todos = []models.Todo{}
 	}
+	fmt.Println(todos)
+
 	return c.JSON(fiber.Map{
 		"status":  "Success",
 		"message": "Success",
@@ -57,6 +65,8 @@ func GetById(c *fiber.Ctx) error {
 			"data":    EmptyMap{},
 		})
 	}
+
+	utils.Cache.Set(strconv.Itoa(id), todo)
 
 	return c.JSON(fiber.Map{
 		"status":  "Success",
