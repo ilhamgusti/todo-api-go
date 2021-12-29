@@ -92,8 +92,7 @@ func Destroy(c *fiber.Ctx) error {
 			"data":    EmptyMap{},
 		})
 	}
-	var activity models.Activity
-	result := database.DB.First(&activity, id)
+	result := database.DB.First(&models.Activity{}, id)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return c.Status(404).JSON(fiber.Map{
@@ -102,7 +101,7 @@ func Destroy(c *fiber.Ctx) error {
 			"data":    EmptyMap{},
 		})
 	}
-	result.Delete(&activity)
+	result.Delete(&models.Activity{})
 
 	return c.JSON(fiber.Map{
 		"status":  "Success",
