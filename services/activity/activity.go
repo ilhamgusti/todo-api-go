@@ -92,23 +92,22 @@ func Destroy(c *fiber.Ctx) error {
 			"data":    EmptyMap{},
 		})
 	}
-	result := database.DB.First(&models.Activity{}, id)
 
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	success := database.DB.Unscoped().Delete(&models.Activity{}, id).RowsAffected
+	fmt.Println(success)
+
+	if success == 0 {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
 			"message": fmt.Sprintf(`Activity with ID %d Not Found`, id),
 			"data":    EmptyMap{},
 		})
 	}
-	result.Delete(&models.Activity{})
-
 	return c.JSON(fiber.Map{
 		"status":  "Success",
 		"message": "Success",
 		"data":    EmptyMap{},
 	})
-
 }
 
 func Update(c *fiber.Ctx) error {

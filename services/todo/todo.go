@@ -122,17 +122,15 @@ func Destroy(c *fiber.Ctx) error {
 			"data":    EmptyMap{},
 		})
 	}
-	result := database.DB.First(&models.Todo{}, id)
+	success := database.DB.Unscoped().Delete(&models.Todo{}, id).RowsAffected
 
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	if success == 0 {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
 			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
 			"data":    EmptyMap{},
 		})
 	}
-	result.Delete(&models.Todo{})
-
 	return c.JSON(fiber.Map{
 		"status":  "Success",
 		"message": "Success",
