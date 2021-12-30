@@ -19,6 +19,8 @@ func main() {
 	app := fiber.New(fiber.Config{
 		JSONEncoder: json.Marshal,
 		JSONDecoder: json.Unmarshal,
+		AppName:     "Todo-API",
+		Prefork:     true,
 	})
 
 	app.Get("/", welcome)
