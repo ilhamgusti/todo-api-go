@@ -36,9 +36,9 @@ func GetById(c *fiber.Ctx) error {
 
 	var activity models.Activity
 
-	errdb := database.DB.First(&activity, id).Error
+	err = database.DB.First(&activity, id).Error
 
-	if errors.Is(errdb, gorm.ErrRecordNotFound) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
 			"message": fmt.Sprintf(`Activity with ID %d Not Found`, id),
@@ -79,7 +79,7 @@ func Store(c *fiber.Ctx) error {
 	return c.Status(201).JSON(fiber.Map{
 		"status":  "Success",
 		"message": "Success",
-		"data":    activity,
+		"data":    &activity,
 	})
 }
 

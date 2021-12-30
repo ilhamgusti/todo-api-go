@@ -35,7 +35,6 @@ func GetAll(c *fiber.Ctx) error {
 	if todos != nil {
 		todos = []models.Todo{}
 	}
-	fmt.Println(todos)
 
 	return c.JSON(fiber.Map{
 		"status":  "Success",
@@ -56,9 +55,9 @@ func GetById(c *fiber.Ctx) error {
 	}
 	var todo models.Todo
 
-	errdb := database.DB.First(&todo, id).Error
+	err = database.DB.First(&todo, id).Error
 
-	if errors.Is(errdb, gorm.ErrRecordNotFound) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
 			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
