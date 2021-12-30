@@ -56,12 +56,10 @@ func Init(app *fiber.App) {
 	endpoint.Post("/todo-items", todo.Store)
 	endpoint.Delete("/todo-items/:id", todo.Destroy)
 	endpoint.Patch("/todo-items/:id", todo.Update)
-	endpoint.Put("/todo-items/:id", todo.Update)
 
 	endpoint.Get("/activity-groups", activity.GetAll)
 	endpoint.Get("/activity-groups/:id", activity.GetById)
 	endpoint.Post("/activity-groups", activity.Store)
 	endpoint.Delete("/activity-groups/:id", activity.Destroy)
 	endpoint.Patch("/activity-groups/:id", activity.Update)
-	endpoint.Put("/activity-groups/:id", activity.Update)
 }
