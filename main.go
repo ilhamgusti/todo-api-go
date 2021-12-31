@@ -1,29 +1,23 @@
 package main
 
 import (
-	"encoding/json"
 	"todo-apis-go/database"
 	"todo-apis-go/router"
+	"todo-apis-go/utils"
 
 	"github.com/gofiber/fiber/v2"
+	jsoniter "github.com/json-iterator/go"
 )
 
-func welcome(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"message": "Welcome to Todo API!",
-	})
-}
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func main() {
+	utils.NewPool()
 	database.ConnectDB()
 	app := fiber.New(fiber.Config{
 		JSONEncoder: json.Marshal,
 		JSONDecoder: json.Unmarshal,
-		AppName:     "Todo-API",
-		Prefork:     true,
 	})
-
-	app.Get("/", welcome)
 
 	router.Init(app)
 
