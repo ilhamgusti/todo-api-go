@@ -45,27 +45,20 @@ func GetAll(c *fiber.Ctx) error {
 }
 
 func GetById(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-	if err != nil {
-		return c.Status(404).JSON(fiber.Map{
-			"status":  "Not Found",
-			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
-			"data":    EmptyMap{},
-		})
-	}
+	id := c.Params("id")
 	var todo models.Todo
 
-	err = database.DB.First(&todo, id).Error
+	err := database.DB.First(&todo, id).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
-			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
+			"message": fmt.Sprintf(`Todo with ID %s Not Found`, id),
 			"data":    EmptyMap{},
 		})
 	}
 
-	utils.Cache.Set(strconv.Itoa(id), todo)
+	utils.Cache.Set(id, todo)
 
 	return c.JSON(fiber.Map{
 		"status":  "Success",
@@ -114,20 +107,14 @@ func Store(c *fiber.Ctx) error {
 }
 
 func Destroy(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-	if err != nil {
-		return c.Status(404).JSON(fiber.Map{
-			"status":  "Not Found",
-			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
-			"data":    EmptyMap{},
-		})
-	}
-	success := database.DB.Unscoped().Delete(&models.Todo{}, id).RowsAffected
+	id := c.Params("id")
+
+	success := database.DB.Delete(&models.Todo{}, id).RowsAffected
 
 	if success == 0 {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
-			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
+			"message": fmt.Sprintf(`Todo with ID %s Not Found`, id),
 			"data":    EmptyMap{},
 		})
 	}
@@ -139,22 +126,16 @@ func Destroy(c *fiber.Ctx) error {
 }
 
 func Update(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-	if err != nil {
-		return c.Status(404).JSON(fiber.Map{
-			"status":  "Not Found",
-			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
-			"data":    EmptyMap{},
-		})
-	}
+	id := c.Params("id")
+
 	todo := new(models.Todo)
 
-	err = database.DB.First(&todo, id).Error
+	err := database.DB.First(&todo, id).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
-			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
+			"message": fmt.Sprintf(`Todo with ID %s Not Found`, id),
 			"data":    EmptyMap{},
 		})
 	}
@@ -162,7 +143,7 @@ func Update(c *fiber.Ctx) error {
 	if err := c.BodyParser(&todo); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"status":  "Bad Request",
-			"message": fmt.Sprintf(`Todo with ID %d Bad Request`, id),
+			"message": fmt.Sprintf(`Todo with ID %s Bad Request`, id),
 		})
 	}
 
@@ -170,7 +151,7 @@ func Update(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"status":  "Success",
 		"message": "Success",
-		"data":    &todo,
+		"data":    todo,
 	})
 
 }

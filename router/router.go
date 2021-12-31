@@ -2,7 +2,6 @@ package router
 
 import (
 	"fmt"
-	"strconv"
 	"todo-apis-go/services/activity"
 	"todo-apis-go/services/todo"
 	"todo-apis-go/utils"
@@ -14,19 +13,18 @@ import (
 )
 
 func cacheMiddleware(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-	stringId := strconv.Itoa(id)
+	id := c.Params("id")
 
 	activityId := c.Query("activity_group_id")
 
-	if stringId == "0" {
+	if id == "0" {
 		if activityId != "" {
-			stringId = fmt.Sprintf("agi_%s", activityId)
+			id = fmt.Sprintf("agi_%s", activityId)
 		} else {
-			stringId = "all"
+			id = "all"
 		}
 	}
-	val, err := utils.Cache.Get(stringId)
+	val, err := utils.Cache.Get(id)
 	if err != ttlcache.ErrNotFound {
 		return c.JSON(fiber.Map{"data": val, "status": "Success", "message": "Success"})
 	} else {
