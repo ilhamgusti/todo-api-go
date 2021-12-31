@@ -3,7 +3,6 @@ package todo
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"todo-apis-go/database"
 	"todo-apis-go/models"
 	"todo-apis-go/utils"
@@ -15,12 +14,11 @@ import (
 type EmptyMap struct{}
 
 func GetAll(c *fiber.Ctx) error {
-	db := database.DB
 	var todos []models.Todo
 	activityId := c.Query("activity_group_id")
 
 	if activityId == "" {
-		db.Table("todos").Find(&todos)
+		database.DB.Table("todos").Find(&todos)
 		utils.Cache.Set("all", todos)
 		return c.JSON(fiber.Map{
 			"status":  "Success",
@@ -28,18 +26,17 @@ func GetAll(c *fiber.Ctx) error {
 			"data":    &todos,
 		})
 	}
-	db.Raw("SELECT * FROM todos WHERE activity_group_id = ?", activityId).Scan(&todos)
-
-	utils.Cache.Set(fmt.Sprintf("agi_%s", activityId), todos)
+	database.DB.Raw("SELECT * FROM todos WHERE activity_group_id = ?", activityId).Scan(&todos)
 
 	if todos != nil {
 		todos = []models.Todo{}
 	}
+	utils.Cache.Set(fmt.Sprintf("agi_%s", activityId), &todos)
 
 	return c.JSON(fiber.Map{
 		"status":  "Success",
 		"message": "Success",
-		"data":    &todos,
+		"data":    todos,
 	})
 
 }
@@ -58,12 +55,12 @@ func GetById(c *fiber.Ctx) error {
 		})
 	}
 
-	utils.Cache.Set(id, todo)
+	utils.Cache.Set(id, &todo)
 
 	return c.JSON(fiber.Map{
 		"status":  "Success",
 		"message": "Success",
-		"data":    &todo,
+		"data":    todo,
 	})
 
 }
@@ -97,7 +94,7 @@ func Store(c *fiber.Ctx) error {
 	return c.Status(201).JSON(fiber.Map{
 		"status":  "Success",
 		"message": "Success",
-		"data":    &todo,
+		"data":    todo,
 	})
 }
 
