@@ -92,11 +92,6 @@ func Store(c *fiber.Ctx) error {
 	todo.IsActive = true
 	todo.Priority = "very-high"
 
-	if err := c.BodyParser(&todo); err != nil {
-		return c.Status(400).JSON(fiber.Map{
-			"status": "Bad Request",
-		})
-	}
 	database.DB.Create(&todo)
 
 	return c.Status(201).JSON(fiber.Map{
