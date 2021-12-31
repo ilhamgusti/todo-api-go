@@ -94,7 +94,6 @@ func Destroy(c *fiber.Ctx) error {
 	}
 
 	success := database.DB.Unscoped().Delete(&models.Activity{}, id).RowsAffected
-	fmt.Println(success)
 
 	if success == 0 {
 		return c.Status(404).JSON(fiber.Map{
