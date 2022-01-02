@@ -7,19 +7,23 @@ import (
 )
 
 var Cache *cache.Cache
+var BareCache *ristretto.Cache
 
 func Init() {
+	var err error
 
-	ristrettoCache, err := ristretto.NewCache(&ristretto.Config{
+	BareCache, err = ristretto.NewCache(&ristretto.Config{
 		NumCounters: 1000,
 		MaxCost:     100,
 		BufferItems: 64,
 	})
+
 	if err != nil {
 		panic(err)
 	}
-	ristrettoStore := store.NewRistretto(ristrettoCache, &store.Options{
-		Cost: 1,
+
+	ristrettoStore := store.NewRistretto(BareCache, &store.Options{
+		Cost: 4,
 	})
 
 	Cache = cache.New(ristrettoStore)
