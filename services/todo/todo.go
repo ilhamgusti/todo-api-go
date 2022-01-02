@@ -2,6 +2,7 @@ package todo
 
 import (
 	"fmt"
+	"strconv"
 	"todo-apis-go/cache"
 	"todo-apis-go/database"
 	"todo-apis-go/models"
@@ -17,8 +18,8 @@ type KeyOfTodo struct {
 var cacheID int
 
 func GetAll(c *fiber.Ctx) error {
-	var id string
-	id = c.Query("activity_group_id")
+
+	id := c.Query("activity_group_id")
 	var todos []models.Todo
 
 	if id == "" {
@@ -53,23 +54,15 @@ func GetAll(c *fiber.Ctx) error {
 
 func GetById(c *fiber.Ctx) error {
 	var err error
-	var id int
 
-	id, err = c.ParamsInt("id")
-	if err != nil {
-		return c.Status(404).JSON(fiber.Map{
-			"status":  "Not Found",
-			"message": fmt.Sprintf(`Activity with ID %d Not Found`, id),
-			"data":    make(map[string]string),
-		})
-	}
+	id := c.Params("id")
 
 	//check inside cache
-	result, err := cache.Cache.Get(KeyOfTodo{ID: id}) //, new(models.Todo)
+	result, err := cache.Cache.Get("t" + id) //, new(models.Todo)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
-			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
+			"message": fmt.Sprintf(`Todo with ID %s Not Found`, id),
 			"data":    make(map[string]string),
 		})
 	}
@@ -77,15 +70,15 @@ func GetById(c *fiber.Ctx) error {
 	go func() {
 		var todo models.Todo
 		err = database.DB.First(&todo, id).Error
-		err = cache.Cache.Set(KeyOfTodo{ID: id}, todo, &store.Options{Cost: 4})
+		// err = cache.Cache.Set("t"+id, todo, &store.Options{Cost: 4})
 	}()
 
 	//save to cache for future check
-	err = cache.Cache.Set(KeyOfTodo{ID: id}, result, &store.Options{Cost: 4})
+	err = cache.Cache.Set("t"+id, result, &store.Options{Cost: 4})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status":  "Error",
-			"message": fmt.Sprintf(`Todo with ID %d Not Save To Cache`, id),
+			"message": fmt.Sprintf(`Todo with ID %s Not Save To Cache`, id),
 			"data":    make(map[string]string),
 		})
 	}
@@ -128,10 +121,10 @@ func Store(c *fiber.Ctx) error {
 
 	go func() {
 		database.DB.Create(&todo)
-		err = cache.Cache.Set(KeyOfTodo{ID: int(todo.ID)}, &todo, &store.Options{Cost: 4})
+		err = cache.Cache.Set("t"+strconv.Itoa(todo.ID), &todo, &store.Options{Cost: 4})
 	}()
 
-	err = cache.Cache.Set(KeyOfTodo{ID: int(todo.ID)}, &todo, &store.Options{Cost: 4})
+	err = cache.Cache.Set("t"+strconv.Itoa(todo.ID), &todo, &store.Options{Cost: 4})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status":  "Error",
@@ -149,32 +142,31 @@ func Store(c *fiber.Ctx) error {
 
 func Destroy(c *fiber.Ctx) error {
 	var err error
-	var id int
 
-	id, err = c.ParamsInt("id")
-	if err != nil {
-		return c.Status(404).JSON(fiber.Map{
-			"status":  "Not Found",
-			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
-			"data":    make(map[string]string),
-		})
-	}
+	id := c.Params("id")
+	// if err != nil {
+	// 	return c.Status(404).JSON(fiber.Map{
+	// 		"status":  "Not Found",
+	// 		"message": fmt.Sprintf(`Todo with ID %s Not Found`, id),
+	// 		"data":    make(map[string]string),
+	// 	})
+	// }
 
 	//check inside cache
-	_, err = cache.Cache.Get(KeyOfTodo{ID: id}) //, new(models.Todo)
+	_, err = cache.Cache.Get("t" + id) //, new(models.Todo)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
-			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
+			"message": fmt.Sprintf(`Todo with ID %s Not Found`, id),
 			"data":    make(map[string]string),
 		})
 	}
 
-	err = cache.Cache.Delete(KeyOfTodo{ID: id})
+	err = cache.Cache.Delete("t" + id)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status":  "Error",
-			"message": fmt.Sprintf(`Todo with ID %d Not Save To Cache`, id),
+			"message": fmt.Sprintf(`Todo with ID %s Not Save To Cache`, id),
 			"data":    make(map[string]string),
 		})
 	}
@@ -192,22 +184,21 @@ func Destroy(c *fiber.Ctx) error {
 
 func Update(c *fiber.Ctx) error {
 	var err error
-	var id int
 
-	id, err = c.ParamsInt("id")
+	id := c.Params("id")
+	// if err != nil {
+	// 	return c.Status(404).JSON(fiber.Map{
+	// 		"status":  "Not Found",
+	// 		"message": fmt.Sprintf(`Todo with ID %s Not Found`, id),
+	// 		"data":    make(map[string]string),
+	// 	})
+	// }
+
+	result, err := cache.Cache.Get("t" + id) // , new(models.Todo)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
-			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
-			"data":    make(map[string]string),
-		})
-	}
-
-	result, err := cache.Cache.Get(KeyOfTodo{ID: id}) // , new(models.Todo)
-	if err != nil {
-		return c.Status(404).JSON(fiber.Map{
-			"status":  "Not Found",
-			"message": fmt.Sprintf(`Todo with ID %d Not Found`, id),
+			"message": fmt.Sprintf(`Todo with ID %s Not Found`, id),
 			"data":    make(map[string]string),
 		})
 	}
@@ -215,7 +206,7 @@ func Update(c *fiber.Ctx) error {
 	if err := c.BodyParser(&result); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"status":  "Bad Request",
-			"message": fmt.Sprintf(`Todo with ID %d Bad Request`, id),
+			"message": fmt.Sprintf(`Todo with ID %s Bad Request`, id),
 		})
 	}
 
@@ -223,7 +214,7 @@ func Update(c *fiber.Ctx) error {
 		database.DB.Save(&result)
 	}()
 
-	err = cache.Cache.Set(KeyOfTodo{ID: int(id)}, &result, &store.Options{Cost: 4})
+	cache.Cache.Set("t"+id, result, &store.Options{Cost: 4})
 
 	return c.JSON(fiber.Map{
 		"status":  "Success",
