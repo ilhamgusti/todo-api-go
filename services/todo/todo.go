@@ -180,7 +180,7 @@ func Destroy(c *fiber.Ctx) error {
 	}
 
 	go func() {
-		database.DB.Delete(&models.Todo{}, id)
+		database.DB.Unscoped().Delete(&models.Todo{}, id)
 	}()
 
 	return c.JSON(fiber.Map{

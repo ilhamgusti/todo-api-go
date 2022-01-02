@@ -178,7 +178,7 @@ func Destroy(c *fiber.Ctx) error {
 		})
 	}
 	go func() {
-		database.DB.Delete(&models.Activity{}, id)
+		database.DB.Unscoped().Delete(&models.Activity{}, id)
 	}()
 
 	return c.JSON(fiber.Map{
