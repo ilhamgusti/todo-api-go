@@ -9,6 +9,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+type EmptyMap struct{}
+
 func cacheMiddleware(c *fiber.Ctx) error {
 	id := c.Params("id")
 
@@ -29,7 +31,7 @@ func cacheMiddleware(c *fiber.Ctx) error {
 			return c.JSON(fiber.Map{
 				"status":  "Success",
 				"message": "Success",
-				"data":    make([]string, 0),
+				"data":    []EmptyMap{},
 			})
 
 		}
@@ -38,7 +40,6 @@ func cacheMiddleware(c *fiber.Ctx) error {
 }
 
 func Init(entrypoint *fiber.App) {
-	// entrypoint.Use(logger.New())
 	entrypoint.Get("/todo-items", cacheMiddleware, todo.GetAll)
 	entrypoint.Get("/todo-items/:id", cacheMiddleware, todo.GetById)
 	entrypoint.Post("/todo-items", todo.Store)
