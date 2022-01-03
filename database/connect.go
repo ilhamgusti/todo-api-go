@@ -52,27 +52,18 @@ func ConnectDB() {
 
 	dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?&parseTime=True&charset=utf8&loc=Local", config.Config("MYSQL_USER"), config.Config("MYSQL_PASSWORD"), config.Config("MYSQL_HOST"), 3306, config.Config("MYSQL_DBNAME"))
 	DB, err = gorm.Open(mysql.New(mysql.Config{
-		DSN:                       dsn,
-		DefaultStringSize:         100,
-		DisableDatetimePrecision:  true,
-		DontSupportRenameIndex:    true,
-		DontSupportRenameColumn:   true,
-		DontSupportForShareClause: true,
-		SkipInitializeWithVersion: true,
+		DSN: dsn,
 	}), &gorm.Config{
-		Logger:                                   logger.Default.LogMode(logger.Silent),
-		SkipDefaultTransaction:                   true,
-		PrepareStmt:                              true,
-		DisableAutomaticPing:                     true,
-		DisableNestedTransaction:                 true,
-		DisableForeignKeyConstraintWhenMigrating: true,
+		Logger:                 logger.Default.LogMode(logger.Silent),
+		SkipDefaultTransaction: true,
+		PrepareStmt:            true,
 	})
 
 	sqlDB, _ := DB.DB()
 	sqlDB.SetConnMaxIdleTime(time.Hour)
 	sqlDB.SetConnMaxLifetime(24 * time.Hour)
-	sqlDB.SetMaxIdleConns(100)
-	sqlDB.SetMaxOpenConns(200)
+	sqlDB.SetMaxIdleConns(200)
+	sqlDB.SetMaxOpenConns(300)
 
 	if err != nil {
 		panic("failed to connect database")
