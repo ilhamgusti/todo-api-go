@@ -23,7 +23,7 @@ func Init() {
 	}
 
 	ristrettoStore := store.NewRistretto(BareCache, &store.Options{
-		Cost: 2,
+		Cost: 1,
 	})
 
 	Cache = cache.New(ristrettoStore)

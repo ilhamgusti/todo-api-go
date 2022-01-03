@@ -25,7 +25,7 @@ func GetAll(c *fiber.Ctx) error {
 		if err != nil {
 			cache.Cache.Delete("activities")
 		}
-		cache.Cache.Set("activities", activities, &store.Options{Cost: 2})
+		cache.Cache.Set("activities", activities, &store.Options{Cost: 1})
 	}()
 
 	result, err = cache.Cache.Get("activities")
@@ -81,7 +81,7 @@ func GetById(c *fiber.Ctx) error {
 		if err != nil {
 			cache.Cache.Delete("a" + id)
 		}
-		cache.Cache.Set("a"+id, activity, &store.Options{Cost: 2})
+		cache.Cache.Set("a"+id, activity, &store.Options{Cost: 1})
 
 	}()
 	if err != nil {
@@ -128,9 +128,9 @@ func Store(c *fiber.Ctx) error {
 
 	go func() {
 		database.DB.Create(&activity)
-		err = cache.Cache.Set("a"+strconv.Itoa(int(activity.ID)), &activity, &store.Options{Cost: 2})
+		err = cache.Cache.Set("a"+strconv.Itoa(int(activity.ID)), &activity, &store.Options{Cost: 1})
 	}()
-	err = cache.Cache.Set("a"+strconv.Itoa(int(activity.ID)), &activity, &store.Options{Cost: 2})
+	err = cache.Cache.Set("a"+strconv.Itoa(int(activity.ID)), &activity, &store.Options{Cost: 1})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status":  "Error",
@@ -206,7 +206,7 @@ func Update(c *fiber.Ctx) error {
 		database.DB.Save(&result)
 	}()
 
-	err = cache.Cache.Set("a"+id, result, &store.Options{Cost: 2})
+	err = cache.Cache.Set("a"+id, result, &store.Options{Cost: 1})
 
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

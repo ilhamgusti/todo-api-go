@@ -22,7 +22,7 @@ func GetAll(c *fiber.Ctx) error {
 
 	if id == "" {
 		database.DB.Table("todos").Find(&todos)
-		cache.Cache.Set("all", todos, &store.Options{Cost: 2})
+		cache.Cache.Set("all", &todos, &store.Options{Cost: 1})
 		return c.JSON(fiber.Map{
 			"status":  "Success",
 			"message": "Success",
@@ -32,14 +32,14 @@ func GetAll(c *fiber.Ctx) error {
 	database.DB.Where("activity_group_id = ?", id).Find(&todos)
 
 	if todos != nil {
-		cache.Cache.Set(fmt.Sprintf("agi_%s", id), todos, &store.Options{Cost: 2})
+		cache.Cache.Set(fmt.Sprintf("agi_%s", id), &todos, &store.Options{Cost: 1})
 		return c.JSON(fiber.Map{
 			"status":  "Success",
 			"message": "Success",
-			"data":    make([]string, 0),
+			"data":    []EmptyMap{},
 		})
 	}
-	cache.Cache.Set(fmt.Sprintf("agi_%s", id), todos, &store.Options{Cost: 2})
+	cache.Cache.Set(fmt.Sprintf("agi_%s", id), &todos, &store.Options{Cost: 1})
 
 	return c.JSON(fiber.Map{
 		"status":  "Success",
@@ -67,7 +67,7 @@ func GetById(c *fiber.Ctx) error {
 	}()
 
 	//save to cache for future check
-	err = cache.Cache.Set("t"+id, result, &store.Options{Cost: 2})
+	err = cache.Cache.Set("t"+id, result, &store.Options{Cost: 1})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status":  "Error",
@@ -111,10 +111,10 @@ func Store(c *fiber.Ctx) error {
 
 	go func() {
 		database.DB.Create(&todo)
-		cache.Cache.Set("t"+strconv.Itoa(int(todo.ID)), &todo, &store.Options{Cost: 2})
+		cache.Cache.Set("t"+strconv.Itoa(int(todo.ID)), &todo, &store.Options{Cost: 1})
 	}()
 
-	err := cache.Cache.Set("t"+strconv.Itoa(int(todo.ID)), &todo, &store.Options{Cost: 2})
+	err := cache.Cache.Set("t"+strconv.Itoa(int(todo.ID)), &todo, &store.Options{Cost: 1})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status":  "Error",
@@ -186,7 +186,7 @@ func Update(c *fiber.Ctx) error {
 		database.DB.Save(&result)
 	}()
 
-	cache.Cache.Set("t"+id, result, &store.Options{Cost: 2})
+	cache.Cache.Set("t"+id, result, &store.Options{Cost: 1})
 
 	return c.JSON(fiber.Map{
 		"status":  "Success",
