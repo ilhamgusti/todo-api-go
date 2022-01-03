@@ -7,7 +7,7 @@ import (
 )
 
 type Todo struct {
-	ID              int            `gorm:"int" json:"id"`
+	ID              uint           `json:"id"`
 	Title           *string        `gorm:"varchar(50)" json:"title"`
 	ActivityGroupId *uint          `gorm:"index" json:"activity_group_id"`
 	IsActive        bool           `json:"is_active"`
