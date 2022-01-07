@@ -1,107 +1,140 @@
 package activity
 
 import (
-	"errors"
 	"fmt"
+	"strconv"
+	"sync"
 	"todo-apis-go/database"
 	"todo-apis-go/models"
 
 	"github.com/gofiber/fiber/v2"
-	"gorm.io/gorm"
 )
 
-type EmptyMap struct {
-}
+var CacheActivityId int
+
+type EmptyMap struct{}
+
+var Cache sync.Map
 
 func GetAll(c *fiber.Ctx) error {
-	var activities []models.Activity
+	go func() {
+		var activities []models.Activity
+		if err := database.DB.Find(&activities).Limit(1).Error; err != nil {
+			Cache.Delete("activities")
+		}
+		Cache.Store("activities", activities)
+	}()
 
-	database.DB.Table("activities").Find(&activities)
+	result, ok := Cache.Load("activities")
+	if !ok {
+		return c.JSON(fiber.Map{
+			"status":  "Success",
+			"message": "Success",
+			"data":    []EmptyMap{},
+		})
+	}
+	if result == nil {
+		return c.JSON(fiber.Map{
+			"status":  "Success",
+			"message": "Success",
+			"data":    []EmptyMap{},
+		})
+	}
+
 	return c.JSON(fiber.Map{
 		"status":  "Success",
 		"message": "Success",
-		"data":    &activities,
+		"data":    result,
 	})
 }
 
 func GetById(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-	if err != nil {
+	id := c.Params("id")
+	//check inside Cache
+	result, ok := Cache.Load("a" + id)
+	if !ok {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
-			"message": fmt.Sprintf(`Activity with ID %d Not Found`, id),
+			"message": fmt.Sprintf(`Activity with ID %s Not Found`, id),
+			"data":    EmptyMap{},
+		})
+	}
+	if result == nil {
+		return c.Status(404).JSON(fiber.Map{
+			"status":  "Not Found",
+			"message": fmt.Sprintf(`Activity with ID %s Not Found`, id),
 			"data":    EmptyMap{},
 		})
 	}
 
-	var activity models.Activity
+	go func() {
+		var activity models.Activity
+		if err := database.DB.First(&activity, id).Error; err != nil {
+			Cache.Delete("a" + id)
+		}
+		Cache.Store("a"+id, activity)
 
-	err = database.DB.First(&activity, id).Error
-
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return c.Status(404).JSON(fiber.Map{
-			"status":  "Not Found",
-			"message": fmt.Sprintf(`Activity with ID %d Not Found`, id),
-			"data":    EmptyMap{},
-		})
-	}
+	}()
 
 	return c.JSON(fiber.Map{
 		"status":  "Success",
 		"message": "Success",
-		"data":    &activity,
+		"data":    result,
 	})
-
 }
-func Store(c *fiber.Ctx) error {
 
+func Store(c *fiber.Ctx) error {
 	activity := new(models.Activity)
 
 	if err := c.BodyParser(&activity); err != nil {
-		return c.Status(400).JSON(fiber.Map{
-			"status": "Bad Request",
-		})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "Bad Request", "message": "body parser error"})
 	}
-	if activity.Title == "" {
-		return c.Status(400).JSON(fiber.Map{
-			"status":  "Bad Request",
-			"message": "title cannot be null",
-		})
-	}
-	if activity.Email == "" {
-		return c.Status(400).JSON(fiber.Map{
-			"status":  "Bad Request",
-			"message": "email cannot be null",
-		})
-	}
-	database.DB.Create(&activity)
+	if activity.Title == nil {
 
-	return c.Status(201).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "Bad Request", "message": "title cannot be null"})
+	}
+	if activity.Email == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "Bad Request", "message": "email cannot be null"})
+	}
+	CacheActivityId = CacheActivityId + 1
+	activity.ID = CacheActivityId
+	go func() {
+		database.DB.Select("Title", "Email").Create(&activity)
+		Cache.Store("a"+strconv.Itoa(activity.ID), activity)
+	}()
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"status":  "Success",
 		"message": "Success",
-		"data":    &activity,
+		"data":    activity,
 	})
 }
 
 func Destroy(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-	if err != nil {
+	id := c.Params("id")
+
+	//check inside Cache
+	result, ok := Cache.Load("a" + id)
+	if !ok {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
-			"message": fmt.Sprintf(`Activity with ID %d Not Found`, id),
+			"message": fmt.Sprintf(`Activity with ID %s Not Found`, id),
 			"data":    EmptyMap{},
 		})
 	}
-
-	success := database.DB.Unscoped().Delete(&models.Activity{}, id).RowsAffected
-
-	if success == 0 {
+	if result == nil {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
-			"message": fmt.Sprintf(`Activity with ID %d Not Found`, id),
+			"message": fmt.Sprintf(`Activity with ID %s Not Found`, id),
 			"data":    EmptyMap{},
 		})
 	}
+	Cache.Delete("a" + id)
+
+	go func() {
+		database.DB.Delete(&models.Activity{}, id)
+	}()
+
 	return c.JSON(fiber.Map{
 		"status":  "Success",
 		"message": "Success",
@@ -110,39 +143,27 @@ func Destroy(c *fiber.Ctx) error {
 }
 
 func Update(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-	if err != nil {
+	id := c.Params("id")
+
+	result, ok := Cache.Load("a" + id)
+	if !ok {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
-			"message": fmt.Sprintf(`Activity with ID %d Not Found`, id),
+			"message": fmt.Sprintf(`Activity with ID %s Not Found`, id),
 			"data":    EmptyMap{},
 		})
 	}
+	c.BodyParser(&result)
 
-	activity := new(models.Activity)
+	go func() {
+		database.DB.Save(&result)
+		Cache.Store("a"+id, result)
+	}()
 
-	err = database.DB.First(&activity, id).Error
-
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return c.Status(404).JSON(fiber.Map{
-			"status":  "Not Found",
-			"message": fmt.Sprintf(`Activity with ID %d Not Found`, id),
-			"data":    EmptyMap{},
-		})
-	}
-
-	if err := c.BodyParser(&activity); err != nil {
-		return c.Status(400).JSON(fiber.Map{
-			"status":  "Bad Request",
-			"message": fmt.Sprintf(`Activity with ID %d Bad Request`, id),
-		})
-	}
-
-	database.DB.Save(&activity)
 	return c.JSON(fiber.Map{
 		"status":  "Success",
 		"message": "Success",
-		"data":    &activity,
+		"data":    result,
 	})
 
 }

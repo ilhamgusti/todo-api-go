@@ -5,16 +5,21 @@ import (
 	"todo-apis-go/router"
 
 	"github.com/gofiber/fiber/v2"
-	jsoniter "github.com/json-iterator/go"
+	// "github.com/segmentio/encoding/json"
+	"github.com/goccy/go-json"
 )
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func main() {
 	database.ConnectDB()
-	app := fiber.New(fiber.Config{
-		JSONEncoder: json.Marshal,
-		JSONDecoder: json.Unmarshal,
+
+	var app *fiber.App = fiber.New(fiber.Config{
+		JSONEncoder:                  json.MarshalNoEscape,
+		JSONDecoder:                  json.Unmarshal,
+		DisableStartupMessage:        true,
+		DisableDefaultDate:           true,
+		DisableHeaderNormalizing:     true,
+		DisablePreParseMultipartForm: true,
+		DisableDefaultContentType:    true,
 	})
 
 	router.Init(app)
