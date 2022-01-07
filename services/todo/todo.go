@@ -10,18 +10,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-var cacheID uint
+var cacheID int
 
-var C sync.Map
+var cache sync.Map
 
 type EmptyMap struct{}
 
 func GetAll(c *fiber.Ctx) error {
 
-	id := c.Query("activity_group_id")
+	id := c.Query("activity_group_id", "all")
 
-	if id == "" {
-		result, ok := C.Load("all")
+	if id != "all" {
+		result, ok := cache.Load("agi_" + id)
 		if !ok {
 			return c.JSON(fiber.Map{
 				"status":  "Success",
@@ -36,11 +36,10 @@ func GetAll(c *fiber.Ctx) error {
 				"data":    []EmptyMap{},
 			})
 		}
-
 		go func() {
 			var todos []models.Todo
-			database.DB.Table("todos").Find(&todos).Limit(1)
-			C.Store("all", &todos)
+			database.DB.Where("activity_group_id = ?", id).Find(&todos).Limit(1)
+			cache.Store("agi_"+id, todos)
 		}()
 
 		return c.JSON(fiber.Map{
@@ -50,7 +49,7 @@ func GetAll(c *fiber.Ctx) error {
 		})
 	}
 
-	result, ok := C.Load("agi_" + id)
+	result, ok := cache.Load(id)
 	if !ok {
 		return c.JSON(fiber.Map{
 			"status":  "Success",
@@ -65,10 +64,11 @@ func GetAll(c *fiber.Ctx) error {
 			"data":    []EmptyMap{},
 		})
 	}
+
 	go func() {
 		var todos []models.Todo
-		database.DB.Where("activity_group_id = ?", id).Find(&todos).Limit(1)
-		C.Store("agi_"+id, &todos)
+		database.DB.Table("todos").Find(&todos).Limit(1)
+		cache.Store("all", todos)
 	}()
 
 	return c.JSON(fiber.Map{
@@ -82,7 +82,7 @@ func GetAll(c *fiber.Ctx) error {
 func GetById(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	result, ok := C.Load("t" + id)
+	result, ok := cache.Load(id)
 	if !ok {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
@@ -95,7 +95,7 @@ func GetById(c *fiber.Ctx) error {
 		var todo models.Todo
 		err := database.DB.First(&todo, id).Error
 		if err != nil {
-			C.Store("t"+id, &todo)
+			cache.Store(id, todo)
 		}
 	}()
 
@@ -128,14 +128,14 @@ func Store(c *fiber.Ctx) error {
 		})
 	}
 
+	cacheID = cacheID + 1
+	todo.ID = strconv.Itoa(cacheID)
 	todo.IsActive = true
 	todo.Priority = "very-high"
-	todo.ID = cacheID + 1
-	cacheID = todo.ID
 
 	go func() {
 		database.DB.Create(&todo)
-		C.Store("t"+strconv.Itoa(int(todo.ID)), &todo)
+		// cache.Store(todo.ID, &todo)
 	}()
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
@@ -149,7 +149,7 @@ func Destroy(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	//check inside cache
-	_, ok := C.Load("t" + id) //, new(models.Todo)
+	_, ok := cache.Load(id) //, new(models.Todo)
 	if !ok {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
@@ -158,10 +158,11 @@ func Destroy(c *fiber.Ctx) error {
 		})
 	}
 
+	cache.Delete(id)
+
 	go func() {
-		database.DB.Unscoped().Delete(&models.Todo{}, id)
+		database.DB.Delete(&models.Todo{}, id)
 	}()
-	C.Delete("t" + id)
 
 	return c.JSON(fiber.Map{
 		"status":  "Success",
@@ -173,7 +174,7 @@ func Destroy(c *fiber.Ctx) error {
 func Update(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	result, ok := C.Load("t" + id) // , new(models.Todo)
+	result, ok := cache.Load(id)
 	if !ok {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
@@ -181,17 +182,11 @@ func Update(c *fiber.Ctx) error {
 			"data":    EmptyMap{},
 		})
 	}
-
-	if err := c.BodyParser(&result); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"status":  "Bad Request",
-			"message": fmt.Sprintf(`Todo with ID %s Bad Request`, id),
-		})
-	}
+	c.BodyParser(&result)
 
 	go func() {
 		database.DB.Save(&result)
-		C.Store("t"+id, result)
+		cache.Store(id, result)
 	}()
 
 	return c.JSON(fiber.Map{

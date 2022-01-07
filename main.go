@@ -5,14 +5,15 @@ import (
 	"todo-apis-go/router"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/segmentio/encoding/json"
+	// "github.com/segmentio/encoding/json"
+	"github.com/goccy/go-json"
 )
 
 func main() {
 	database.ConnectDB()
 
 	var app *fiber.App = fiber.New(fiber.Config{
-		JSONEncoder:                  json.Marshal,
+		JSONEncoder:                  json.MarshalNoEscape,
 		JSONDecoder:                  json.Unmarshal,
 		DisableStartupMessage:        true,
 		DisableDefaultDate:           true,

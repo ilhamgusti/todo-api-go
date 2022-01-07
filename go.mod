@@ -3,15 +3,11 @@ module todo-apis-go
 go 1.17
 
 require (
-	github.com/gofiber/fiber/v2 v2.23.0
-	github.com/segmentio/encoding v0.3.2
+	github.com/goccy/go-json v0.9.0
+	github.com/gofiber/fiber/v2 v2.24.0
+	github.com/joho/godotenv v1.4.0
 	gorm.io/driver/mysql v1.2.2
 	gorm.io/gorm v1.22.4
-)
-
-require (
-	github.com/klauspost/cpuid/v2 v2.0.6 // indirect
-	github.com/segmentio/asm v1.1.0 // indirect
 )
 
 require (
