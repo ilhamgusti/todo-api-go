@@ -40,11 +40,11 @@ func ConnectDB() {
 		panic(err)
 	}
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `todos` (`id` varchar(50),`title` varchar(50),`activity_group_id` int unsigned,`is_active` boolean,`priority` varchar(10)) ENGINE=MyISAM")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `todos` (`id` int,`title` varchar(50),`activity_group_id` int unsigned,`is_active` boolean,`priority` varchar(10)) ENGINE=MyISAM")
 	if err != nil {
 		panic(err)
 	}
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `activities` (`id` varchar(50),`email` varchar(50),`title` varchar(50)) ENGINE=MyISAM")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `activities` (`id` int,`email` varchar(50),`title` varchar(50)) ENGINE=MyISAM")
 	if err != nil {
 		panic(err)
 	}

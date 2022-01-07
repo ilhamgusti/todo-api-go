@@ -10,27 +10,22 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-var cacheActivityId int
+var CacheActivityId int
 
 type EmptyMap struct{}
 
-type Response struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
-}
-
-var cache sync.Map
+var Cache sync.Map
 
 func GetAll(c *fiber.Ctx) error {
 	go func() {
 		var activities []models.Activity
 		if err := database.DB.Find(&activities).Limit(1).Error; err != nil {
-			cache.Delete("activities")
+			Cache.Delete("activities")
 		}
-		cache.Store("activities", activities)
+		Cache.Store("activities", activities)
 	}()
 
-	result, ok := cache.Load("activities")
+	result, ok := Cache.Load("activities")
 	if !ok {
 		return c.JSON(fiber.Map{
 			"status":  "Success",
@@ -55,8 +50,8 @@ func GetAll(c *fiber.Ctx) error {
 
 func GetById(c *fiber.Ctx) error {
 	id := c.Params("id")
-	//check inside cache
-	result, ok := cache.Load(id)
+	//check inside Cache
+	result, ok := Cache.Load("a" + id)
 	if !ok {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
@@ -75,9 +70,9 @@ func GetById(c *fiber.Ctx) error {
 	go func() {
 		var activity models.Activity
 		if err := database.DB.First(&activity, id).Error; err != nil {
-			cache.Delete(id)
+			Cache.Delete("a" + id)
 		}
-		cache.Store(id, activity)
+		Cache.Store("a"+id, activity)
 
 	}()
 
@@ -92,20 +87,20 @@ func Store(c *fiber.Ctx) error {
 	activity := new(models.Activity)
 
 	if err := c.BodyParser(&activity); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(Response{Status: "Bad Request", Message: "body parser error"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "Bad Request", "message": "body parser error"})
 	}
 	if activity.Title == nil {
 
-		return c.Status(fiber.StatusBadRequest).JSON(Response{Status: "Bad Request", Message: "title cannot be null"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "Bad Request", "message": "title cannot be null"})
 	}
 	if activity.Email == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(Response{Status: "Bad Request", Message: "email cannot be null"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "Bad Request", "message": "email cannot be null"})
 	}
-	cacheActivityId = cacheActivityId + 1
-	activity.ID = strconv.Itoa(cacheActivityId)
+	CacheActivityId = CacheActivityId + 1
+	activity.ID = CacheActivityId
 	go func() {
 		database.DB.Select("Title", "Email").Create(&activity)
-		// cache.Store(activity.ID, activity)
+		Cache.Store("a"+strconv.Itoa(activity.ID), activity)
 	}()
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
@@ -118,8 +113,8 @@ func Store(c *fiber.Ctx) error {
 func Destroy(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	//check inside cache
-	result, ok := cache.Load(id)
+	//check inside Cache
+	result, ok := Cache.Load("a" + id)
 	if !ok {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
@@ -134,7 +129,7 @@ func Destroy(c *fiber.Ctx) error {
 			"data":    EmptyMap{},
 		})
 	}
-	cache.Delete(id)
+	Cache.Delete("a" + id)
 
 	go func() {
 		database.DB.Delete(&models.Activity{}, id)
@@ -150,7 +145,7 @@ func Destroy(c *fiber.Ctx) error {
 func Update(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	result, ok := cache.Load(id)
+	result, ok := Cache.Load("a" + id)
 	if !ok {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
@@ -162,7 +157,7 @@ func Update(c *fiber.Ctx) error {
 
 	go func() {
 		database.DB.Save(&result)
-		cache.Store(id, result)
+		Cache.Store("a"+id, result)
 	}()
 
 	return c.JSON(fiber.Map{

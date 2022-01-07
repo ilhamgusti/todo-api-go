@@ -12,7 +12,7 @@ import (
 
 var cacheID int
 
-var cache sync.Map
+var Cache sync.Map
 
 type EmptyMap struct{}
 
@@ -21,7 +21,7 @@ func GetAll(c *fiber.Ctx) error {
 	id := c.Query("activity_group_id", "all")
 
 	if id != "all" {
-		result, ok := cache.Load("agi_" + id)
+		result, ok := Cache.Load("agi_" + id)
 		if !ok {
 			return c.JSON(fiber.Map{
 				"status":  "Success",
@@ -39,7 +39,7 @@ func GetAll(c *fiber.Ctx) error {
 		go func() {
 			var todos []models.Todo
 			database.DB.Where("activity_group_id = ?", id).Find(&todos).Limit(1)
-			cache.Store("agi_"+id, todos)
+			Cache.Store("agi_"+id, todos)
 		}()
 
 		return c.JSON(fiber.Map{
@@ -49,7 +49,7 @@ func GetAll(c *fiber.Ctx) error {
 		})
 	}
 
-	result, ok := cache.Load(id)
+	result, ok := Cache.Load("t" + id)
 	if !ok {
 		return c.JSON(fiber.Map{
 			"status":  "Success",
@@ -68,7 +68,7 @@ func GetAll(c *fiber.Ctx) error {
 	go func() {
 		var todos []models.Todo
 		database.DB.Table("todos").Find(&todos).Limit(1)
-		cache.Store("all", todos)
+		Cache.Store("all", todos)
 	}()
 
 	return c.JSON(fiber.Map{
@@ -82,7 +82,7 @@ func GetAll(c *fiber.Ctx) error {
 func GetById(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	result, ok := cache.Load(id)
+	result, ok := Cache.Load("t" + id)
 	if !ok {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
@@ -95,7 +95,7 @@ func GetById(c *fiber.Ctx) error {
 		var todo models.Todo
 		err := database.DB.First(&todo, id).Error
 		if err != nil {
-			cache.Store(id, todo)
+			Cache.Store("t"+id, todo)
 		}
 	}()
 
@@ -129,13 +129,13 @@ func Store(c *fiber.Ctx) error {
 	}
 
 	cacheID = cacheID + 1
-	todo.ID = strconv.Itoa(cacheID)
+	todo.ID = cacheID
 	todo.IsActive = true
 	todo.Priority = "very-high"
 
 	go func() {
 		database.DB.Create(&todo)
-		// cache.Store(todo.ID, &todo)
+		Cache.Store("t"+strconv.Itoa(todo.ID), todo)
 	}()
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
@@ -149,7 +149,7 @@ func Destroy(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	//check inside cache
-	_, ok := cache.Load(id) //, new(models.Todo)
+	_, ok := Cache.Load("t" + id) //, new(models.Todo)
 	if !ok {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
@@ -158,7 +158,7 @@ func Destroy(c *fiber.Ctx) error {
 		})
 	}
 
-	cache.Delete(id)
+	Cache.Delete("t" + id)
 
 	go func() {
 		database.DB.Delete(&models.Todo{}, id)
@@ -174,7 +174,7 @@ func Destroy(c *fiber.Ctx) error {
 func Update(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	result, ok := cache.Load(id)
+	result, ok := Cache.Load("t" + id)
 	if !ok {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "Not Found",
@@ -186,7 +186,7 @@ func Update(c *fiber.Ctx) error {
 
 	go func() {
 		database.DB.Save(&result)
-		cache.Store(id, result)
+		Cache.Store("t"+id, result)
 	}()
 
 	return c.JSON(fiber.Map{
